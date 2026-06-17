@@ -130,6 +130,8 @@ contract SoulPet {
     function feed(uint256 id) external payable exists(id) onlyOwner(id) {
         Pet storage p = pets[id];
         require(!_isSleeping(), "Pet is sleeping");
+        // 喂食冷却为小时级，验证者对时间戳的微小操纵不影响安全性。
+        // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp >= p.lastFed + FEED_COOLDOWN, "Too soon to feed");
 
         _settle(p); // 先把随时间累积的衰减结算到存储
@@ -185,6 +187,8 @@ contract SoulPet {
 
         uint8 nextStage = p.stage + 1;
         // 阶段越高，要求的最小年龄与累计亲密度越高
+        // 进化年龄门槛为天级，验证者对时间戳的微小操纵不影响安全性。
+        // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp >= p.birth + EVOLVE_MIN_AGE * nextStage, "Too young to evolve");
         require(p.affinity >= EVOLVE_MIN_AFFINITY * nextStage, "Affinity too low to evolve");
         require(p.mood >= 50, "Mood too low to evolve");
@@ -343,6 +347,8 @@ contract SoulPet {
 
     /// @notice 宠物是否被冷落（超过阈值时长没有任何互动）。
     function isNeglected(uint256 id) public view exists(id) returns (bool) {
+        // 冷落判定为天级阈值，验证者对时间戳的微小操纵不影响安全性。
+        // forge-lint: disable-next-line(block-timestamp)
         return block.timestamp >= pets[id].lastInteract + NEGLECT_THRESHOLD;
     }
 
@@ -373,11 +379,15 @@ contract SoulPet {
 
     /// @dev 把饥饿度限制在 [0,100]
     function _clampHunger(uint256 v) internal pure returns (uint16) {
+        // 三元分支保证此处 v <= 100，转 uint16 不会截断。
+        // forge-lint: disable-next-line(unsafe-typecast)
         return v > 100 ? 100 : uint16(v);
     }
 
     /// @dev 把心情限制在 [0,100]
     function _clampMood(uint256 v) internal pure returns (uint16) {
+        // 三元分支保证此处 v <= 100，转 uint16 不会截断。
+        // forge-lint: disable-next-line(unsafe-typecast)
         return v > 100 ? 100 : uint16(v);
     }
 
